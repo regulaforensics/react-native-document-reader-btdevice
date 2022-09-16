@@ -14,7 +14,7 @@ android {
 rootProject.allprojects {
     repositories {
         maven {
-            url ""
+            url "https://maven.regulaforensics.com/RegulaDocumentReader/Beta"
         }
     }
 }
@@ -23,6 +23,6 @@ dependencies {
     //noinspection GradleDynamicVersion
     implementation 'com.facebook.react:react-native:+'
 	//noinspection GradleDependency
-	implementation 'com.regula.btdevice:api:'
+	implementation 'com.regula.btdevice:api:5.4.363'
 }
   
