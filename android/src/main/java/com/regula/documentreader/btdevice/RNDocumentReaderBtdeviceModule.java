@@ -15,6 +15,6 @@ public class RNDocumentReaderBtdeviceModule extends ReactContextBaseJavaModule {
 
   @Override
   public String getName() {
-    return "RNDocumentReaderCore";
+    return "RNDocumentReaderBtdevice";
   }
 }
