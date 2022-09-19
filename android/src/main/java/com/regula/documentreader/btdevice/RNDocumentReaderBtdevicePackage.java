@@ -1,19 +1,18 @@
 
-package com.regula.documentreader.core;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+package com.regula.documentreader.btdevice;
 
 import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
-import com.facebook.react.bridge.JavaScriptModule;
-public class RNDocumentReaderCorePackage implements ReactPackage {
+
+import java.util.Collections;
+import java.util.List;
+public class RNDocumentReaderBtdevicePackage implements ReactPackage {
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
-      return Arrays.<NativeModule>asList(new RNDocumentReaderCoreModule(reactContext));
+      return Collections.singletonList(new RNDocumentReaderBtdeviceModule(reactContext));
     }
 
     // Deprecated from RN 0.47
