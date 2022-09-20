@@ -114,7 +114,7 @@ export default class App extends Component {
   checkPermissionsAndConnect() {
     DocumentReader.isBlePermissionsGranted(granted => {
       if (granted) {
-        console.log("blePermissions granted")
+        this.setState({ fullName: "Loading..." })
         if (!this.state.isBleServiceConnected) {
           console.log("connecting bleService")
           DocumentReader.setConfig({
@@ -124,10 +124,8 @@ export default class App extends Component {
             }
           }, s => DocumentReader.startBluetoothService(s => { }, e => { }), e => { })
         } else console.log("bleService already connected")
-      } else {
-        console.log("ble permissions denied")
+      } else
         this.setState({ fullName: "ble permissions denied" })
-      }
     }, e => console.log(e))
   }
 
