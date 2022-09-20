@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   s.source       = { :http => 'file:' + __dir__ }
 
   s.ios.deployment_target = '11.0'
-  s.dependency 'BTDevice', '5.8.210'
+  s.dependency 'BTDeviceBeta', '6.1.240'
 
   s.dependency 'React'
 end

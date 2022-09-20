@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { StyleSheet, View, Button, Text, Image, ScrollView, NativeEventEmitter, Platform, TouchableOpacity } from 'react-native'
-import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader } from '@regulaforensics/react-native-document-reader-api'
+import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader } from '@regulaforensics/react-native-document-reader-api-beta'
 import * as RNFS from 'react-native-fs'
 import RadioGroup from 'react-native-radio-buttons-group'
 import * as Progress from 'react-native-progress'
@@ -52,7 +52,7 @@ export default class App extends Component {
     eventManager.addListener('bleOnServiceDisconnectedEvent', e => this.bleOnServiceDisconnected(e["msg"]))
     eventManager.addListener('bleOnDeviceReadyEvent', e => this.bleOnDeviceReady(e["msg"]))
 
-    DocumentReader.prepareDatabase("Full", (respond) => {
+    DocumentReader.prepareDatabase("FullAuth", (respond) => {
       console.log(respond)
       this.setState({ fullName: "Database prepared" })
     }, error => console.log(error))
@@ -125,8 +125,8 @@ export default class App extends Component {
           }, s => DocumentReader.startBluetoothService(s => { }, e => { }), e => { })
         } else console.log("bleService already connected")
       } else {
-        console.log("ble permissions denied, retrying")
-        checkPermissionsAndConnect()
+        console.log("ble permissions denied")
+        this.setState({ fullName: "ble permissions denied" })
       }
     }, e => console.log(e))
   }
