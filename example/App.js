@@ -49,8 +49,8 @@ export default class App extends Component {
     eventManager.addListener('paCertificateCompletionEvent', e => console.log("paCertificateCompletionEvent: " + e["msg"]))
 
     eventManager.addListener('bleOnServiceConnectedEvent', e => this.bleOnServiceConnected())
-    eventManager.addListener('bleOnServiceDisconnectedEvent', e => this.bleOnServiceDisconnected(e["msg"]))
-    eventManager.addListener('bleOnDeviceReadyEvent', e => this.bleOnDeviceReady(e["msg"]))
+    eventManager.addListener('bleOnServiceDisconnectedEvent', e => this.bleOnServiceDisconnected())
+    eventManager.addListener('bleOnDeviceReadyEvent', e => this.bleOnDeviceReady())
 
     DocumentReader.prepareDatabase("FullAuth", (respond) => {
       console.log(respond)
