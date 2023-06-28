@@ -103,7 +103,7 @@ export default class App extends Component {
 
     this.setState({ fullName: "Initializing..." })
     this.setState({ isBleDeviceReady: true })
-    DocumentReader.initializeReaderDevice7310Config((response) => {
+    DocumentReader.initializeReaderBleDeviceConfig((response) => {
       this.onInitCompleted(response)
     }, error => {
       this.setState({ fullName: error })
