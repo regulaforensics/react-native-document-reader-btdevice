@@ -15,12 +15,12 @@ def enableHermes = project.ext.react.get("enableHermes", false);
 def nativeArchitectures = project.getProperties().get("reactNativeDebugArchitectures")
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
         applicationId "com.regula.dr.fullrfid"
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
     }
