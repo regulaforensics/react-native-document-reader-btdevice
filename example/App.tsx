@@ -1,27 +1,43 @@
-import React, { Component } from 'react'
-import { StyleSheet, View, Button, Text, Image, ScrollView, NativeEventEmitter, Platform, TouchableOpacity } from 'react-native'
-import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader } from '@regulaforensics/react-native-document-reader-api'
+
+import React from 'react'
+import { SafeAreaView, ScrollView, StyleSheet, Text, View, NativeEventEmitter, Image, Button, TextInput } from 'react-native'
+import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader, DocumentReaderResults, ScannerConfig, RecognizeConfig } from '@regulaforensics/react-native-document-reader-api-beta'
 import RadioGroup from 'react-native-radio-buttons-group'
-import * as Progress from 'react-native-progress'
-import CheckBox from 'react-native-check-box'
-import { LogBox, TextInput } from 'react-native';
+import { CheckBox } from '@rneui/themed'
+import Icon from 'react-native-vector-icons/FontAwesome'
+import { launchImageLibrary } from 'react-native-image-picker'
 
-LogBox.ignoreLogs(['new NativeEventEmitter']);
-const eventManager = new NativeEventEmitter(RNRegulaDocumentReader)
+var isReadingRfid = false
 
-var isReadingRfid = false;
+interface IProps {
+}
 
-export default class App extends Component {
-  constructor(props) {
+interface IState {
+  btDeviceName: string,
+  isBleServiceConnected: boolean,
+  isBleDeviceReady: boolean,
+  fullName: string | undefined
+  doRfid: boolean
+  canRfid: boolean
+  canRfidTitle: string
+  radioButtons: any
+  selectedScenario: string
+  portrait: any
+  docFront: any
+}
+
+export default class App extends React.Component<IProps, IState> {
+  constructor(props: {} | Readonly<{}>) {
     super(props)
-    eventManager.addListener('prepareDatabaseProgressChangeEvent', e => this.setState({ fullName: "Downloading database: " + e["msg"] + "%" }))
-    eventManager.addListener('completionEvent', e => this.handleCompletion(DocumentReaderCompletion.fromJson(JSON.parse(e["msg"]))))
-    eventManager.addListener('rfidNotificationCompletionEvent', e => console.log("rfidNotificationCompletionEvent: " + e["msg"]))
-    eventManager.addListener('paCertificateCompletionEvent', e => console.log("paCertificateCompletionEvent: " + e["msg"]))
+    Icon.loadFont()
 
-    eventManager.addListener('bleOnServiceConnectedEvent', e => this.bleOnServiceConnected())
-    eventManager.addListener('bleOnServiceDisconnectedEvent', e => this.bleOnServiceDisconnected())
-    eventManager.addListener('bleOnDeviceReadyEvent', e => this.bleOnDeviceReady())
+    var eventManager = new NativeEventEmitter(RNRegulaDocumentReader)
+    eventManager.addListener('prepareDatabaseProgressChangeEvent', e => this.setState({ fullName: "Downloading database: " + e["msg"] + "%" }))
+    eventManager.addListener('completionEvent', (e) => this.handleCompletion(DocumentReaderCompletion.fromJson(JSON.parse(e["msg"]))!))
+
+    eventManager.addListener('bleOnServiceConnectedEvent', (_) => this.bleOnServiceConnected())
+    eventManager.addListener('bleOnServiceDisconnectedEvent', (_) => this.bleOnServiceDisconnected())
+    eventManager.addListener('bleOnDeviceReadyEvent', (_) => this.bleOnDeviceReady())
 
     DocumentReader.prepareDatabase("FullAuth", (respond) => {
       console.log(respond)
@@ -32,21 +48,14 @@ export default class App extends Component {
       btDeviceName: "Regula 0000",
       isBleServiceConnected: false,
       isBleDeviceReady: false,
-      getDocumentReaderIsReady: false,
       fullName: "Please wait...",
       doRfid: false,
-      isReadingRfidCustomUi: false,
       canRfid: false,
-      canRfidTitle: '(unavailable)',
-      scenarios: [],
+      canRfidTitle: "(unavailable)",
+      radioButtons: [{ label: 'Loading', id: "0" }],
       selectedScenario: "",
       portrait: require('./images/portrait.png'),
-      docFront: require('./images/id.png'),
-      radio: < RadioGroup containerStyle={styles.radio}
-        radioButtons={
-          [{ label: 'Loading', id: 0 }]}
-        onPress={null}
-      />
+      docFront: require('./images/id.png')
     }
   }
 
@@ -100,122 +109,117 @@ export default class App extends Component {
     }, e => console.log(e))
   }
 
-  onInitCompleted(response) {
+  onInitCompleted(response: string) {
     console.log(response)
     DocumentReader.isRFIDAvailableForUse((canRfid) => {
-      if (canRfid) {
-        this.setState({ canRfid: true, rfidUIHeader: "Reading RFID", rfidDescription: "Place your phone on top of the NFC tag", rfidUIHeaderColor: "black" })
-        this.setState({ canRfidTitle: '' })
-      }
+      if (canRfid) this.setState({ canRfid: true, canRfidTitle: '' })
     }, error => console.log(error))
     DocumentReader.getAvailableScenarios((jstring) => {
-      var scenariosTemp = JSON.parse(jstring)
-      var scenariosL = []
-      for (var i in scenariosTemp) {
-        scenariosL.push({
-          label: DocumentReaderScenario.fromJson(typeof scenariosTemp[i] === "string" ? JSON.parse(scenariosTemp[i]) : scenariosTemp[i]).name,
-          id: i
+      var scenarios = JSON.parse(jstring)
+      var items: any = []
+      for (var i in scenarios) {
+        var scenario = DocumentReaderScenario.fromJson(typeof scenarios[i] === "string" ? JSON.parse(scenarios[i]) : scenarios[i])!.name
+        items.push({
+          label: scenario,
+          id: scenario
         })
       }
-      this.setState({ scenarios: scenariosL })
-      this.setState({ selectedScenario: this.state.scenarios[0]['label'] })
-      this.setState({ radio: null })
-      this.setState({
-        radio: < RadioGroup containerStyle={styles.radio}
-          radioButtons={this.state.scenarios}
-          onPress={
-            (data) => {
-              var selectedItem
-              for (var index in data)
-                if (data[index]['selected'])
-                  selectedItem = data[index]['label']
-              this.setState({ selectedScenario: selectedItem })
-            }
-          }
-        />
-      })
+      this.setState({ radioButtons: items })
+      this.setState({ selectedScenario: this.state.radioButtons[0]['id'] })
+      DocumentReader.setConfig({
+        functionality: {
+          videoCaptureMotionControl: true,
+          showCaptureButton: true
+        },
+        customization: {
+          showResultStatusMessages: true,
+          showStatusMessages: true
+        },
+        processParams: {
+          scenario: this.state.selectedScenario,
+          doRfid: this.state.doRfid,
+        },
+      }, _ => { }, error => console.log(error))
+
       DocumentReader.getDocumentReaderIsReady((isReady) => {
         if (isReady) {
-          this.setState({ getDocumentReaderIsReady: true })
           this.setState({ fullName: "Ready" })
-          DocumentReader.setRfidDelegate(Enum.RFIDDelegate.NO_PA, (r) => { }, error => console.log(error))
-          // addCertificates()
+          DocumentReader.setRfidDelegate(Enum.RFIDDelegate.NO_PA, _ => { }, error => console.log(error))
         } else
           this.setState({ fullName: "Failed" })
       }, error => console.log(error))
     }, error => console.log(error))
   }
 
-  handleCompletion(completion) {
-    if (this.state.isReadingRfidCustomUi && (completion.action === Enum.DocReaderAction.CANCEL || completion.action === Enum.DocReaderAction.ERROR))
-      this.hideRfidUI()
-    if (this.state.isReadingRfidCustomUi && completion.action === Enum.DocReaderAction.NOTIFICATION)
-      this.updateRfidUI(completion.results.documentReaderNotification)
-    if (completion.action === Enum.DocReaderAction.COMPLETE)
-      if (this.state.isReadingRfidCustomUi)
-        if (completion.results.rfidResult !== 1)
-          this.restartRfidUI()
-        else {
-          this.hideRfidUI()
-          this.displayResults(completion.results)
-        }
-      else
-        this.handleResults(completion.results)
-    if (completion.action === Enum.DocReaderAction.TIMEOUT)
-      this.handleResults(completion.results)
-    if (completion.action === Enum.DocReaderAction.CANCEL || completion.action === Enum.DocReaderAction.ERROR)
-      isReadingRfid = false
-  }
-
-  showRfidUI() {
-    // show animation
-    this.setState({ isReadingRfidCustomUi: true })
-  }
-
-  hideRfidUI() {
-    // show animation
-    this.restartRfidUI()
-    this.setState({ isReadingRfidCustomUi: false, rfidUIHeader: "Reading RFID", rfidUIHeaderColor: "black" })
-  }
-
-  restartRfidUI() {
-    this.setState({ rfidUIHeaderColor: "red", rfidUIHeader: "Failed!", rfidDescription: "Place your phone on top of the NFC tag", rfidProgress: -1 })
-  }
-
-  updateRfidUI(results) {
-    if (results.code === Enum.eRFID_NotificationCodes.RFID_NOTIFICATION_PCSC_READING_DATAGROUP)
-      this.setState({ rfidDescription: Enum.eRFID_DataFile_Type.getTranslation(results.number) })
-    this.setState({ rfidUIHeader: "Reading RFID", rfidUIHeaderColor: "black", rfidProgress: results.value / 100 })
-    if (Platform.OS === 'ios')
-      DocumentReader.setRfidSessionStatus(this.state.rfidDescription + "\n" + results.value + "%", e => { }, e => { })
+  handleCompletion(completion: DocumentReaderCompletion) {
+    if (completion.action === Enum.DocReaderAction.COMPLETE || completion.action === Enum.DocReaderAction.TIMEOUT)
+      this.handleResults(completion.results!)
   }
 
   clearResults() {
     this.setState({ fullName: "Ready", docFront: require('./images/id.png'), portrait: require('./images/portrait.png') })
   }
 
-  displayResults(results) {
-    this.setState({ fullName: results.getTextFieldValueByType({ fieldType: Enum.eVisualFieldType.FT_SURNAME_AND_GIVEN_NAMES }) })
-    if (results.getGraphicFieldImageByType({ fieldType: Enum.eGraphicFieldType.GF_DOCUMENT_IMAGE }) != null)
-      this.setState({ docFront: { uri: "data:image/png;base64," + results.getGraphicFieldImageByType({ fieldType: Enum.eGraphicFieldType.GF_DOCUMENT_IMAGE }) } })
-    if (results.getGraphicFieldImageByType({ fieldType: Enum.eGraphicFieldType.GF_PORTRAIT }) != null)
-      this.setState({ portrait: { uri: "data:image/png;base64," + results.getGraphicFieldImageByType({ fieldType: Enum.eGraphicFieldType.GF_PORTRAIT }) } })
+  scan() {
+    this.clearResults()
+    var config = new ScannerConfig()
+    config.scenario = this.state.selectedScenario
+    DocumentReader.scan(config, _ => { }, e => console.log(e))
   }
 
-  customRFID() {
-    this.showRfidUI()
-    DocumentReader.readRFID(e => { }, e => { })
+  recognize() {
+    launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: true,
+      selectionLimit: 10
+    }, r => {
+      if (r.errorCode != null) {
+        console.log("error code: " + r.errorCode)
+        console.log("error message: " + r.errorMessage)
+        this.setState({ fullName: r.errorMessage })
+        return
+      }
+      if (r.didCancel) return
+      this.clearResults()
+      this.setState({ fullName: "COPYING IMAGE..." })
+      var response = r.assets
+
+      var images: any = []
+
+      for (var i = 0; i < response!.length; i++) {
+        images.push(response![i].base64!)
+      }
+      this.setState({ fullName: "PROCESSING..." })
+
+      var config = new RecognizeConfig()
+      config.scenario = this.state.selectedScenario
+      config.images = images
+      DocumentReader.recognize(config, _ => { }, e => console.log(e))
+    })
   }
 
-  usualRFID() {
-    isReadingRfid = true
-    DocumentReader.startRFIDReader(e => { }, e => { })
+  displayResults(results: DocumentReaderResults) {
+    if (results == null) return
+
+    results.textFieldValueByType(Enum.eVisualFieldType.FT_SURNAME_AND_GIVEN_NAMES, (value: string | undefined) => {
+      this.setState({ fullName: value })
+    }, (error: string) => console.log(error))
+
+    results.graphicFieldImageByType(Enum.eGraphicFieldType.GF_DOCUMENT_IMAGE, (value: string | undefined) => {
+      if (value != null && value != "")
+        this.setState({ docFront: { uri: "data:image/png;base64," + value } })
+    }, (error: string) => console.log(error))
+
+    results.graphicFieldImageByType(Enum.eGraphicFieldType.GF_PORTRAIT, (value: string | undefined) => {
+      if (value != null && value != "")
+        this.setState({ portrait: { uri: "data:image/png;base64," + value } })
+    }, (error: string) => console.log(error))
   }
 
-  handleResults(results) {
+  handleResults(results: DocumentReaderResults) {
     if (this.state.doRfid && !isReadingRfid && results != null && results.chipPage != 0) {
-      // this.customRFID()
-      this.usualRFID()
+      isReadingRfid = true
+      DocumentReader.startRFIDReader(_ => { }, _ => { })
     } else {
       isReadingRfid = false
       this.displayResults(results)
@@ -224,22 +228,15 @@ export default class App extends Component {
 
   render() {
     return (
-      <View style={styles.container}>
-        {(this.state.isReadingRfidCustomUi && Platform.OS === 'android') && <View style={styles.container}>
-          <Text style={{ paddingBottom: 30, fontSize: 23, color: this.state.rfidUIHeaderColor }}>{this.state.rfidUIHeader}</Text>
-          <Text style={{ paddingBottom: 50, fontSize: 20 }}>{this.state.rfidDescription}</Text>
-          <Progress.Bar width={200} useNativeDriver={true} color="#4285F4" progress={this.state.rfidProgress} />
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { this.hideRfidUI() }}>
-            <Text style={{ fontSize: 20 }}>X</Text>
-          </TouchableOpacity>
-        </View>
-        }
-        {!this.state.isReadingRfidCustomUi && <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
+          <Text /><Text />
           <Text style={{
             top: 1,
             left: 1,
             padding: 30,
             fontSize: 20,
+            color: "black"
           }}>
             {this.state.fullName}
           </Text>
@@ -249,6 +246,7 @@ export default class App extends Component {
                 top: 1,
                 right: 1,
                 padding: 5,
+                color: "black"
               }}>
                 Portrait
               </Text>
@@ -266,6 +264,7 @@ export default class App extends Component {
                 top: 1,
                 right: 1,
                 padding: 5,
+                color: "black"
               }}>
                 Document image
               </Text>
@@ -281,30 +280,30 @@ export default class App extends Component {
           </View>
 
           <ScrollView style={{ padding: 5, alignSelf: 'center' }} showsVerticalScrollIndicator={false}>
-            {this.state.radio}
+            <RadioGroup containerStyle={styles.radio}
+              radioButtons={this.state.radioButtons}
+              onPress={
+                (selectedID) => {
+                  this.setState({ selectedScenario: selectedID })
+                }
+              }
+              selectedId={this.state.selectedScenario}
+            />
           </ScrollView>
 
           <View style={{ flexDirection: 'row', padding: 5 }}>
             <CheckBox
-              isChecked={this.state.doRfid}
-              onClick={() => {
-                if (this.state.canRfid) {
-                  this.setState({ doRfid: !this.state.doRfid })
-                }
-              }}
-              disabled={!this.state.canRfid}
-            />
-            <Text
-              style={{ padding: 5 }}
+              containerStyle={{ backgroundColor: '#F5FCFF' }}
+              checked={this.state.doRfid}
+              title={'Process rfid reading' + this.state.canRfidTitle}
               onPress={() => {
                 if (this.state.canRfid) {
                   this.setState({ doRfid: !this.state.doRfid })
                 }
-              }}>
-              {'Process rfid reading' + this.state.canRfidTitle}
-            </Text>
+              }} />
           </View>
-          {!this.state.getDocumentReaderIsReady && <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text>btDeviceName: </Text>
             <TextInput
               style={styles.input}
@@ -312,41 +311,14 @@ export default class App extends Component {
               value={this.state.btDeviceName}
               placeholder="btDeviceName"
             />
-          </View>}
-
+          </View>
           <View style={{ flexDirection: 'row' }}>
-            <Button color="#4285F4"
-              onPress={() => {
-                if (!this.state.getDocumentReaderIsReady) return
-                this.clearResults()
-                DocumentReader.setConfig({
-                  functionality: {
-                    videoCaptureMotionControl: true,
-                    showCaptureButton: true
-                  },
-                  customization: {
-                    showResultStatusMessages: true,
-                    showStatusMessages: true
-                  },
-                  processParams: {
-                    scenario: this.state.selectedScenario,
-                    doRfid: this.state.doRfid,
-                  },
-                }, e => { }, error => console.log(error))
-
-                DocumentReader.showScanner(s => { }, e => console.log(e))
-              }}
-              title="Scan document"
-            />
+            <Button color="#4285F4" title="Scan document" onPress={() => this.scan()} />
             <Text style={{ padding: 5 }}></Text>
-            <Button color="#4285F4"
-              onPress={() => this.checkPermissionsAndConnect()}
-              title="     Start service    "
-            />
+            <Button color="#4285F4" title="Start service" onPress={() => this.checkPermissionsAndConnect()} />
           </View>
         </View>
-        }
-      </View>
+      </SafeAreaView>
     )
   }
 }
@@ -370,16 +342,6 @@ const styles = StyleSheet.create({
   },
   radio: {
     alignItems: 'flex-start'
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
   },
   cancelButton: {
     position: 'absolute',
