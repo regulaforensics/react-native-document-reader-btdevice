@@ -1,7 +1,6 @@
 import React, { Component } from 'react'
 import { StyleSheet, View, Button, Text, Image, ScrollView, NativeEventEmitter, Platform, TouchableOpacity } from 'react-native'
-import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader } from '@regulaforensics/react-native-document-reader-api'
-import * as RNFS from 'react-native-fs'
+import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader } from '@regulaforensics/api_module_place_holder'
 import RadioGroup from 'react-native-radio-buttons-group'
 import * as Progress from 'react-native-progress'
 import CheckBox from 'react-native-check-box'
@@ -10,35 +9,7 @@ import { LogBox, TextInput } from 'react-native';
 LogBox.ignoreLogs(['new NativeEventEmitter']);
 const eventManager = new NativeEventEmitter(RNRegulaDocumentReader)
 
-var certDir = Platform.OS === 'ios' ? (RNFS.MainBundlePath + "/certificates") : "certificates"
-var readDir = Platform.OS === 'ios' ? RNFS.readDir : RNFS.readDirAssets
-var readFile = Platform.OS === 'ios' ? RNFS.readFile : RNFS.readFileAssets
-
 var isReadingRfid = false;
-
-async function addCertificates() {
-  var certificates = []
-  var items = await readDir(certDir, 'base64')
-
-  for (var i in items) {
-    var item = items[i]
-    if (item.isFile()) {
-      var findExt = item.name.split('.')
-      var pkdResourceType = 0
-      if (findExt.length > 0)
-        pkdResourceType = Enum.PKDResourceType.getType(findExt[findExt.length - 1].toLowerCase())
-
-      var file = await readFile(item.path, 'base64')
-      certificates.push({
-        'binaryData': file,
-        'resourceType': pkdResourceType
-      })
-    }
-  }
-  DocumentReader.addPKDCertificates(certificates, s => {
-    console.log("certificates added")
-  }, e => console.log(e))
-}
 
 export default class App extends Component {
   constructor(props) {
