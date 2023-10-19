@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { SafeAreaView, ScrollView, StyleSheet, Text, View, NativeEventEmitter, Image, Button, TextInput } from 'react-native'
-import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader, DocumentReaderResults, ScannerConfig, RecognizeConfig } from '@regulaforensics/react-native-document-reader-api'
+import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader, DocumentReaderResults, ScannerConfig, RecognizeConfig } from '@regulaforensics/react-native-document-reader-api-beta'
 import RadioGroup, { RadioButtonProps } from 'react-native-radio-buttons-group'
 import { CheckBox } from '@rneui/themed'
 import Icon from 'react-native-vector-icons/FontAwesome'
@@ -242,7 +242,7 @@ export default class App extends React.Component<IProps, IState> {
 
           <ScrollView style={{ padding: 5, alignSelf: 'center' }} showsVerticalScrollIndicator={false}>
             <RadioGroup
-              containerStyle={styles.radio}
+              containerStyle={{ alignItems: 'flex-start' }}
               radioButtons={this.state.radioButtons}
               onPress={(selectedID) => { this.setState({ selectedScenario: selectedID }) }}
               selectedId={this.state.selectedScenario}
@@ -299,14 +299,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
     marginBottom: 12,
-  },
-  radio: {
-    alignItems: 'flex-start'
-  },
-  cancelButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 20
   },
   imageLabel: {
     top: 1,
