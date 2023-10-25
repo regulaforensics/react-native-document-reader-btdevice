@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { SafeAreaView, ScrollView, StyleSheet, Text, View, NativeEventEmitter, Image, Button, TextInput } from 'react-native'
-import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader, DocumentReaderResults, ScannerConfig, RecognizeConfig } from '@regulaforensics/react-native-document-reader-api-beta'
+import DocumentReader, { Enum, DocumentReaderCompletion, DocumentReaderScenario, RNRegulaDocumentReader, DocumentReaderResults, ScannerConfig, RecognizeConfig } from '@regulaforensics/react-native-document-reader-api'
 import RadioGroup, { RadioButtonProps } from 'react-native-radio-buttons-group'
 import { CheckBox } from '@rneui/themed'
 import Icon from 'react-native-vector-icons/FontAwesome'
